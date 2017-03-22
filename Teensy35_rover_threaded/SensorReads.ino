@@ -37,86 +37,10 @@ void oneSensorCycle() { // Sensor ping cycle complete, do something with the res
     //telem << obs_array[i] << ", ";
   }
   //telem << endl;  
+
+  //telem << "IR Distances: " << frtIRdistance << " -- " << rearIRdistance << endl;
+
 }
-
-void read_sensors() {
-  int start = millis();
-    cm[0] = 0;  
-    unsigned int uS = sonarll.ping();
-    //unsigned int uS = sonarll.ping_median();
-    cm[0] = uS / US_ROUNDTRIP_CM;
-    delay(PING_INTERVAL);  
-  
-    cm[1] = 0;  
-    uS = sonarlc.ping();
-    //uS = sonarlc.ping_median();
-    cm[1] = uS / US_ROUNDTRIP_CM;
-    delay(PING_INTERVAL); 
-  
-    cm[2] = 0;  
-    uS = sonarlr.ping();
-    //uS = sonarlr.ping_median();
-    cm[2] = uS / US_ROUNDTRIP_CM;
-    delay(PING_INTERVAL);
-
-    cm[3] = 0;  
-    uS = sonarhd.ping();
-    uS = sonarhd.ping_median();
-    cm[3] = uS / US_ROUNDTRIP_CM;
-    delay(PING_INTERVAL);
-
-    for (uint8_t i = 0; i < SONAR_NUM; i++) {
-      if(cm[i] == 0) cm[i] = MAX_DISTANCE;
-     }
-    
-    frtIRdistance = frtIRaverage(3);
-    rearIRdistance = rearIRaverage(3);
-    
-    //telem << "IR Distances: " << frtIRdistance << " -- " << rearIRdistance << endl;
-
-  if(cm[1] == MAX_DISTANCE) {
-    if(frtIRdistance <= 0.9 * max_IR_distance ) {
-      cm[1] = frtIRdistance;
-    }
-  }
-    
-    compass_update(); 
-    //getInclination();
-}
-
-void compass_update() {
-    sensors_event_t event;
-    bno.getEvent(&event);
-    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    imu::Vector<3> accel_linear = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
-    imu::Vector<3> rot_rate = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-    
-    roll = (float)event.orientation.y;
-    pitch = (float)event.orientation.z;
-    yar_heading = (float)event.orientation.x;
-
-    gyroz = (float) rot_rate.z();
-    accelx = (float) accel_linear.x();
-    accely = (float) accel_linear.y();
-
-  // Adjust heading to account for declination
-    wp_heading = yar_heading;
-    wp_heading += DEC_ANGLE;
-    
-    //telem << "Compass Yar/dec Heading: " << yar_heading << " , " << heading << endl;
-    
-    // Correct for when signs are reversed.
-    if(wp_heading < 0)
-      wp_heading += 360.;
-    
-    // Check for wrap due to addition of declination.
-    if(wp_heading > 360.)
-      wp_heading -= 360.;
-    
-    //telem << roll << "\t" << pitch << "\t" << yar_heading << endl;
-    //telem << "Changed heading: " << yar_heading << endl;
-   
-  }  
 
 void head_distance() {
     headservo.write(head_lft);
@@ -158,34 +82,6 @@ void head_distance() {
   return;
 }
 
-  
-int frtIRaverage(int average_count) {
-  int sum = 0;
-  for (int i=0; i<average_count; i++) {
-    int sensor_value = analogRead(leftIRsensor);  //read the sensor value
-    if(sensor_value < 100){
-      sensor_value = 100; 
-    }
-    sum = sum + sensor_value;
-    delay(5);
-    }
-  int distance_cm = 27495 * pow(sum/average_count,-1.36); //convert readings to distance(cm)
-  return(distance_cm);   
-}
-  
-int rearIRaverage(int average_count) {
-  int sum = 0;
-  for (int i=0; i<average_count; i++) {
-    int sensor_value = analogRead(rightIRsensor);  //read the sensor value
-    if(sensor_value < 100){
-      sensor_value = 100; 
-    }
-    sum = sum + sensor_value;
-    delay(5);
-  }
-  int distance_cm = 25445 * pow(sum/average_count,-1.362); //convert readings to distance(cm)
-  return(distance_cm);   
-}
 
 void getTicks_noreset()
 {

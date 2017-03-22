@@ -243,7 +243,7 @@ void decide_direction() {
         getTicks();
 			  send_telemetry();
            
-			  read_sensors();   
+			  //read_sensors();   
 			  oneSensorCycle();
 		  }   
 		  mStop();

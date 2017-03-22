@@ -21,8 +21,12 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //============================================================================
 
-#define telem Serial4
+#define telem Serial
 //#define telem Serial4 // bluetooth
+
+#define rad2deg 57.2957795131
+#define deg2rad 0.01745329251
+#define m2ft 3.280839895
 
 //Enable 400Khz I2C bus speed
 const boolean fastmode = true;

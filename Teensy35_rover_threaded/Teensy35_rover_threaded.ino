@@ -140,6 +140,7 @@
 #include <Encoder.h>
 #include <StopWatch.h>
 #include <elapsedMillis.h>
+#include "TeensyThreads.h"
 
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
@@ -286,14 +287,19 @@ int tDeadZoneRange, sDeadZoneRange;
 //int Speed;
 boolean clockwise;
 
-int hallPin= 24;
-int statePin=LOW;
+int id1, id2, id3;
 
 void setup() {
     telem.begin(57600);
    
-    Wire.begin();
-    //Wire.setClock(400000L);
+    //Wire.begin();
+    Wire.setClock(400000L);
+
+    Serial.print("Thread start ");
+    if (threads.setMicroTimer(5)==0) { // ticks every 10 microseconds!
+        Serial.println("Failed to set timer!");
+    }
+
 
     delay(2000);
     
@@ -315,16 +321,7 @@ void setup() {
     //Set Motor Speed
     //speed = 50;
     //turnSpeed = 150;
-    
-    telem.println("Ready to receive telem Commands![f, b, r, l, s, t]"); // Tell us I"m ready
-    //telem.println("My Commands are: ");
-    //telem.println("f:forward");
-    //telem.println("b:backward");
-    //telem.println("r:right");
-    //telem.println("l:left");
-    //telem.println("s:stop");
-    //telem.println("t:toggleRoam");    
-    
+      
     //signal output port
     //set all of the outputs for the motor driver
     pinMode(IN1, OUTPUT);       // Motor Driver 
@@ -345,10 +342,32 @@ void setup() {
 
     randomSeed(analogRead(0));
 
+    id1 = threads.addThread(sonar_thread);
+    id2 = threads.addThread(sharp_dist_thread);
+    id3 = threads.addThread(bno055_thread);
+    threads.setTimeSlice(0, 1);
+    threads.setTimeSlice(id1, 1);
+    threads.setTimeSlice(id2, 1);
+    threads.setTimeSlice(id3, 1);
+    if (threads.getState(id1) == Threads::RUNNING) Serial.println("Sonar thread started");
+    if (threads.getState(id2) == Threads::RUNNING) Serial.println("IR thread started");
+    if (threads.getState(id3) == Threads::RUNNING) Serial.println("BNO055 thread started");
+
+    telem.println("Ready to receive telem Commands![f, b, r, l, s, t]"); // Tell us I"m ready
+    //telem.println("My Commands are: ");
+    //telem.println("f:forward");
+    //telem.println("b:backward");
+    //telem.println("r:right");
+    //telem.println("l:left");
+    //telem.println("s:stop");
+    //telem.println("t:toggleRoam");    
+  
 }
 
 void loop() {
 
+    oneSensorCycle();
+    
     //Continuously read servos
     ticksRR = encB.read();
     ticksLR = encA.read();
@@ -377,7 +396,7 @@ void loop() {
         //currentTime = millis();
         if((motorFwd % 600) == 0){
           //Cycle through obstacle avoidance sensors for emergency stop
-          read_sensors();
+          //read_sensors();
           oneSensorCycle();
           if(obs_array[0] == 1 || obs_array[1] == 1 || obs_array[2] == 1) {
             stop_flag = 1;
@@ -409,7 +428,7 @@ void loop() {
       //telem << "Turn Multiplier: " << turn_time_mult << endl;
       //telem.println("Turning Left!");
       set_speed(turnSpeed);
-      compass_update();
+      //compass_update();
       telem << "Change heading: " << turn_time_mult*100 << ", " << yar_heading << ", ";
        mLeft();
       //delay(400);  //was 2000
@@ -418,7 +437,7 @@ void loop() {
       while(motorTurnTime < defaultTurnTime) {
        }
       mStop();
-      compass_update();
+      //compass_update();
       telem << yar_heading << endl;
 
       motorTurnTime = 0;
@@ -432,7 +451,7 @@ void loop() {
       //telem.println("Turning Right!");
       //compass_update();
       set_speed(turnSpeed);
-      compass_update();
+      //compass_update();
       telem << "Change heading: " << turn_time_mult*100 << ", " << yar_heading << ", ";
       mRight();
       //delay(400);
@@ -441,7 +460,7 @@ void loop() {
       while(motorTurnTime < defaultTurnTime) {
         }
       mStop();
-      compass_update();
+      //compass_update();
       telem << yar_heading << endl;
       motorTurnTime = 0;
       break;
@@ -526,7 +545,7 @@ void toggleRoam(){
 
 void goRoam() {  
   
-   read_sensors();   
+   //read_sensors();   
    oneSensorCycle(); 
    decide_direction();
     
