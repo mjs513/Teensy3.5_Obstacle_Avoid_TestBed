@@ -22,6 +22,9 @@
 //============================================================================
 
 void Select_Direction() {
+
+    threads.suspend(id1);  //suspend sonar thread
+    
     ////telem << endl << endl << "************************************" << endl;
     ////telem << "Entering Select Direction Function" << endl;
 
@@ -325,6 +328,8 @@ void Select_Direction() {
       mRight();
       delay(delay_time);
     }
+
+    threads.restart(id1);
 }
 
 

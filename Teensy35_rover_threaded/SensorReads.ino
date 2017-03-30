@@ -123,7 +123,13 @@ void send_telemetry(){
 
       stasis();
       telem << " ---- " << motor_on <<  "," << stasis_err << ", " << stasis_flag;
-      telem << ", " << gyroz << ", " << accelx << ", " << accely;
+      telem << ", " << gyroz << ", " << accelx << ", " << accely << ", ";
+
+    for (uint8_t i = 0; i < SONAR_NUM; i++) {
+      telem <<  cm[i] << "cm, "; }
+
+      telem << frtIRdistance << ", " << rearIRdistance << ", ";
+
       telem << endl;
       
       telem_timer = 0;

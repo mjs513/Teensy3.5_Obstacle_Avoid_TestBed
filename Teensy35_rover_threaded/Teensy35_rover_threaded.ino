@@ -192,6 +192,8 @@ elapsedMillis turn_timer;
 elapsedMillis telem_timer;
 elapsedMillis gps_waypoint_timer;
 elapsedMillis odo_timer;
+elapsedMillis sensorTimer;
+elapsedMillis sensorTimer1;
 
 StopWatch etm_millis;
 
@@ -201,14 +203,31 @@ unsigned long currentTime_avg;
 unsigned long sensorRunTime;
 
 
-int cm[SONAR_NUM];         // Where the ping distances are stored.
+#define SONAR_NUM     4 // Number or sensors.
+#define MAX_DISTANCE 200 // Maximum distance (in cm) to ping.
+#define PING_INTERVAL 45 // Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
+
+unsigned int cm[SONAR_NUM];         // Where the ping distances are stored.
 uint8_t currentSensor = 0;          // Keeps track of which sensor is active.
+unsigned long pingTimer[SONAR_NUM]; // Holds the times when the next ping should happen for each sensor.
+
+
+NewPing sonar[SONAR_NUM] = {
+  NewPing(27, 26, MAX_DISTANCE), //lower left sensor
+  NewPing(36, 35, MAX_DISTANCE), //front middle
+  NewPing(30, 29, MAX_DISTANCE), //lower rigth sensro
+  NewPing(34, 33, MAX_DISTANCE)  // Each sensor's trigger pin, echo pin, and max distance to ping.
+};
+
+NewPing sonarhd(34, 33, MAX_DISTANCE);  // Each sensor's trigger pin, echo pin, and max distance to ping.
 
 uint8_t obs_array[5];
 int cm_head[5];
 
 int frtIRdistance, rearIRdistance;
 int leftCounter, rightCounter;
+
+int lls, lcs, lrs, hds, irF, irR;
 
 //encoder variables
 long ticksRR,
@@ -290,16 +309,13 @@ boolean clockwise;
 int id1, id2, id3;
 
 void setup() {
+Serial.print( "millis 0 here ==" );
+Serial.println( millis() );
     telem.begin(57600);
-   
-    //Wire.begin();
+Serial.print( "millis here ==" );
+Serial.println( millis() );
+    Wire.begin();
     Wire.setClock(400000L);
-
-    Serial.print("Thread start ");
-    if (threads.setMicroTimer(5)==0) { // ticks every 10 microseconds!
-        Serial.println("Failed to set timer!");
-    }
-
 
     delay(2000);
     
@@ -307,9 +323,10 @@ void setup() {
 		  telem.print(F("\r\nOSC did not start"));
 		  while (1); // Halt
 	  }
-	  telem.print(F("\r\nPS4 Bluetooth Library Started"));
+	  telem.println(F("\r\nPS4 Bluetooth Library Started"));
+    telem << endl;
 
-    
+
     //==================================================
     // Initial Adafruit BNO055
     //==================================================
@@ -317,7 +334,6 @@ void setup() {
     BNO055_Init();
     
     delay(100);
-
     //Set Motor Speed
     //speed = 50;
     //turnSpeed = 150;
@@ -342,18 +358,23 @@ void setup() {
 
     randomSeed(analogRead(0));
 
+    pingTimer[0] = millis() + 75;           // First ping starts at 75ms, gives time for the Arduino to chill before starting.
+    for (uint8_t i = 1; i < SONAR_NUM; i++) // Set the starting time for each sensor.
+      pingTimer[i] = pingTimer[i - 1] + PING_INTERVAL;
+
     id1 = threads.addThread(sonar_thread);
     id2 = threads.addThread(sharp_dist_thread);
     id3 = threads.addThread(bno055_thread);
     threads.setTimeSlice(0, 1);
-    threads.setTimeSlice(id1, 1);
+    threads.setTimeSlice(id1, 20);
     threads.setTimeSlice(id2, 1);
     threads.setTimeSlice(id3, 1);
-    if (threads.getState(id1) == Threads::RUNNING) Serial.println("Sonar thread started");
-    if (threads.getState(id2) == Threads::RUNNING) Serial.println("IR thread started");
-    if (threads.getState(id3) == Threads::RUNNING) Serial.println("BNO055 thread started");
+    if (threads.getState(id1) == Threads::RUNNING) telem.println("Sonar thread started");
+    if (threads.getState(id2) == Threads::RUNNING) telem.println("IR thread started");
+    if (threads.getState(id3) == Threads::RUNNING) telem.println("BNO055 thread started");
 
-    telem.println("Ready to receive telem Commands![f, b, r, l, s, t]"); // Tell us I"m ready
+
+    telem << "Ready to receive telem Commands![f, b, r, l, s, t]" << endl; // Tell us I"m ready
     //telem.println("My Commands are: ");
     //telem.println("f:forward");
     //telem.println("b:backward");
@@ -546,7 +567,7 @@ void toggleRoam(){
 void goRoam() {  
   
    //read_sensors();   
-   oneSensorCycle(); 
+   //oneSensorCycle(); 
    decide_direction();
     
 }

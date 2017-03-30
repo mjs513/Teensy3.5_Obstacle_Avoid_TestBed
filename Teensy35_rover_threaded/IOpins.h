@@ -68,19 +68,13 @@ const int leftmotorpin2  = IN4;  //signal output 4 of Dc motor
 //const int r_int = 4;
 
 // read encoders
-const int l_encoder = 24;
-const int r_encoder = 25;
+const int l_encoder = 25;
+const int r_encoder = 24;
 Encoder encB(l_encoder, r_encoder);
 Encoder encA(38, 39);
 
 const int HeadServopin = 23; // signal input of headservo
 //const int head_tilt_pin = 3; // signal input for headservo tilt
-
-NewPing sonarll(27, 26, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
-NewPing sonarlc(36, 35, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
-NewPing sonarlr(30, 29, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
-NewPing sonarhd(34, 33, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
-
 
 //IR Sensor Pins
 const int leftIRsensor = A22;   //Front

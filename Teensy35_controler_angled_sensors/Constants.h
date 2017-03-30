@@ -55,7 +55,7 @@ int motorSpeed_left = 50;           // offset required for differences in motor 
 int turnSpeed = 65;                 //define turning speed parameter, was 75, was 87
                                     //change due to canakit driver
 //was 40
-int speed = 35;                     //increase from 40 to 50 (2/6)
+int speed = 40;                     //increase from 40 to 50 (2/6)
 int turn_time_mult = 2;
 int turn_time;
 

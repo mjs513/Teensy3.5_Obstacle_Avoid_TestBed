@@ -70,11 +70,6 @@ const int head_rt = 180;
 const int head_ldiag = 45;
 const int head_rdiag = 135;
 
-#define SONAR_NUM     4    			// Number or sensors. 4 with head
-#define MAX_DISTANCE 200   			// Maximum distance (in cm) to ping.
-#define PING_INTERVAL 40   			// Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
-                                          // was set to 33
-
 // the interval in mS 
 //#define interval 7500    //was 7500
 #define interval 100
@@ -85,6 +80,8 @@ const int head_rdiag = 135;
 #define defaultTelemTime 500
 #define defaultWayPointTime 1000
 #define defaultOdoTime 50
+#define sensorUpdate 50
+#define sensorUpdate1 50
 
 //Bubble Rebound Parameters
 const float V = 21;

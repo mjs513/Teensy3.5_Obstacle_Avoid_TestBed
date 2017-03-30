@@ -22,21 +22,27 @@
 //============================================================================
 
 void decide_direction() {
-  interrupts();
+  //interrupts();
+
+  if(sensorTimer1 > sensorUpdate1){
+     telem << "Entering Decide Direction Test" << endl;
+     update_sensors();
+     sensorTimer1 = 0;
+  }
   
   // No forward obstacles
-  if(cm[3] > fowardheadThreshold && cm[0] > sideSensorThreshold && 
-        cm[1] > lcThreshold && cm[2] > sideSensorThreshold &&
-        frtIRdistance > lcIRthreshold) {
+  if(hds > fowardheadThreshold && lls > sideSensorThreshold && 
+        lcs > lcThreshold && lrs > sideSensorThreshold &&
+        irF > lcIRthreshold) {
     nextMove = "Straight";
     //telem << "(DC) Next Move Straight" << endl;
   }
   
   // If everything is blocked in the forward direction lets backupSensorThreshold
   // and run the Bubble rebound/VFH routing
-  else if(cm[0] < sideSensorThreshold && cm[2] < sideSensorThreshold && 
-      (cm[3] < fowardheadThreshold || cm[1] < lcThreshold 
-      || frtIRdistance < lcIRthreshold)) {
+  else if(lls < sideSensorThreshold && lrs < sideSensorThreshold && 
+      (hds < fowardheadThreshold || lcs < lcThreshold 
+      || irF < lcIRthreshold)) {
     
     moveBackward();
    
@@ -46,9 +52,9 @@ void decide_direction() {
   
   // Special Cases
   
-  else if(cm[0] < sideSensorThreshold && cm[2] == MAX_DISTANCE && 
-      cm[3] < fowardheadThreshold && cm[1] < lcThreshold 
-      && frtIRdistance < lcIRthreshold) {
+  else if(lls < sideSensorThreshold && lrs == MAX_DISTANCE && 
+      hds < fowardheadThreshold && lcs < lcThreshold 
+      && irF < lcIRthreshold) {
 
     //moveBackward();
     //nextMove = "RunBubble";
@@ -61,9 +67,9 @@ void decide_direction() {
     //telem << "(DC) Everything blocked Next Move Backup" << endl;
   }
 
-  else if(cm[2] < sideSensorThreshold && cm[0] == MAX_DISTANCE && 
-      cm[3] < fowardheadThreshold && cm[1] < lcThreshold 
-      && frtIRdistance < lcIRthreshold) {
+  else if(lrs < sideSensorThreshold && lls == MAX_DISTANCE && 
+      hds < fowardheadThreshold && lcs < lcThreshold 
+      && irF < lcIRthreshold) {
 
 //    moveBackward();  
 //    nextMove = "RunBubble";
@@ -77,21 +83,21 @@ void decide_direction() {
   } 
   
   // Do any of the front facing range sensors detect an obstacle closer than their
-  // threshold?  If so, then prepare to turn left or right. cm[3] < fowardheadThreshold ||
-  //else if( cm[1] < lcThreshold || frtIRdistance < lcIRthreshold)
+  // threshold?  If so, then prepare to turn left or right. hds < fowardheadThreshold ||
+  //else if( lcs < lcThreshold || irF < lcIRthreshold)
     
   // If head sensor is blocked (less than threshold) run bubble and be done with iter_swap
-  // else if(cm[3] < fowardheadThreshold) {
+  // else if(hds < fowardheadThreshold) {
   //  nextMove = "RunBubble";
   //}
   
-  else if(frtIRdistance < lcIRthreshold || cm[1] < fowardheadThreshold
-          || cm[3] < fowardheadThreshold) 
+  else if(irF < lcIRthreshold || lcs < fowardheadThreshold
+          || hds < fowardheadThreshold) 
 		{
 			//moveBackward();  
 			//nextMove = "RunBubble";
 
-			if(cm[0] < cm[2]) {       //If left  is greater than right distance move left
+			if(lls < lrs) {       //If left  is greater than right distance move left
 				//nextMove = "Left";
 				//turn_time = left_45;    //was 37
 				nextMove = "Right";
@@ -101,7 +107,7 @@ void decide_direction() {
 				//delay(turn_time);     //was 1500, 700, 225 - calc at 275 change to 325
 				//mStop();
 				//nextMove = "Straight";
-			} else if(cm[0] > cm[2]){    //If right is greater than left distance move right
+			} else if(lls > lrs){    //If right is greater than left distance move right
 				//nextMove = "Right";
 				//turn_time = right_45; //was 37
 				nextMove = "Left";
@@ -120,7 +126,7 @@ void decide_direction() {
 
   // What about the angled looking  detectors?
   // If right and center distances is less than threshold move left alot
-  else if(cm[0] < sideSensorThreshold && cm[1] < fowardheadThreshold){
+  else if(lls < sideSensorThreshold && lcs < fowardheadThreshold){
     //nextMove = "Left";
     //turn_time = left_57;
 	  nextMove = "Right";
@@ -129,7 +135,7 @@ void decide_direction() {
   }
   
   // If left and center distances is less than threshold move right alot
-  else if(cm[2] < sideSensorThreshold && cm[1] < fowardheadThreshold){
+  else if(lrs < sideSensorThreshold && lcs < fowardheadThreshold){
     //nextMove = "Right";
     //turn_time = right_57;
     nextMove = "Left";
@@ -139,7 +145,7 @@ void decide_direction() {
   
   // If right distances is less than threshold and center not blocked 
   // move left a little
-  else if (cm[0] < sideSensorThreshold && cm[1] > fowardheadThreshold)
+  else if (lls < sideSensorThreshold && lcs > fowardheadThreshold)
   {
     //nextMove = "Left";
     //turn_time = left_37;
@@ -151,7 +157,7 @@ void decide_direction() {
   // If left distance is less than threshold and center not blocked 
   // move right a little
   //
-  else if(cm[2] < sideSensorThreshold && cm[1] > fowardheadThreshold)
+  else if(lrs < sideSensorThreshold && lcs > fowardheadThreshold)
   {
     //nextMove = "Right";
     //turn_time = right_37;
@@ -223,9 +229,9 @@ void decide_direction() {
     
 		mForward();
 		//keep moving forward until next obstacle is found
-		while(cm[3] > fowardheadThreshold && cm[0] > sideSensorThreshold && 
-          cm[1] > lcThreshold && cm[2] > sideSensorThreshold &&
-          frtIRdistance > lcIRthreshold && stasis_flag == 0) {
+		while(hds > fowardheadThreshold && lls > sideSensorThreshold && 
+          lcs > lcThreshold && lrs > sideSensorThreshold &&
+          irF > lcIRthreshold && stasis_flag == 0) {
 
 			if(telem.available() > 0) {
 				int val = telem.read();  //read telem input commands  
@@ -242,9 +248,15 @@ void decide_direction() {
 			  gDirection = DIRECTION_FORWARD;
         getTicks();
 			  send_telemetry();
-           
+
+        if(sensorTimer > sensorUpdate){
+          telem << "While Loop for Going Straight" << endl;
+          update_sensors();
+          sensorTimer = 0;
+        }
+ 
 			  //read_sensors();   
-			  oneSensorCycle();
+			  //oneSensorCycle();
 		  }   
 		  mStop();
       if(stasis_flag == 1) stasis_correction();
@@ -257,7 +269,8 @@ void moveBackward() {
   //rebound algorithm
     
   //telem << "Moving Backward to avoid obstacle" << endl;
-  if(rearIRdistance > backupSensorThreshold) {
+  int irR = rearIRdistance;
+  if(irR > backupSensorThreshold) {
     set_speed(backup_high);
     mBackward();
     smartDelay(450);
@@ -292,4 +305,15 @@ static void smartDelay(unsigned long ms)
   
 }
 
+void update_sensors(){
+  lls = cm[0];
+  lcs = cm[1];
+  lrs = cm[2];
+  hds = cm[3];
+  irF = frtIRdistance;
+  irR = rearIRdistance;
+
+  telem << lls << ", " << lcs << ", " << lrs << ", " << hds << endl;
+  telem << irF << ", " << irR << endl;
+}
 
