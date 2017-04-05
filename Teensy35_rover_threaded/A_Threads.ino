@@ -48,15 +48,15 @@ void sharp_dist_thread(){
 
 void bno055_thread(){
   while(1){
-    sensors_event_t event;
-    bno.getEvent(&event);
+    sensors_event_t sensor;
+    bno.getEvent(&sensor);
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     imu::Vector<3> accel_linear = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
     imu::Vector<3> rot_rate = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
     
-    roll = (float)event.orientation.y;
-    pitch = (float)event.orientation.z;
-    yar_heading = (float)event.orientation.x;
+    roll = (float)sensor.orientation.y;
+    pitch = (float)sensor.orientation.z;
+    yar_heading = (float)sensor.orientation.x;
 
     gyroz = (float) rot_rate.z() * rad2deg;
     accelx = (float) accel_linear.x() * m2ft;
@@ -78,6 +78,7 @@ void bno055_thread(){
     
     //telem << roll << "\t" << pitch << "\t" << yar_heading << endl;
     //telem << "Changed heading: " << yar_heading << endl;
+    threads.delay(BNO055_SAMPLERATE_DELAY_MS);
 
   }
 }

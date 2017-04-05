@@ -108,7 +108,7 @@ const int angle = 6;  //was 20 degrees, was 15 for 12
 
 // Waypoints  Constants
 #define HEADING_TOLERANCE 5     // tolerance +/- (in degrees) within which we don't attempt to turn to intercept targetHeading
-float wp_heading;
+volatile float wp_heading;
 
 // Speeds (range: 0 - 255)
 int FAST_SPEED = 60;
@@ -174,16 +174,12 @@ uint8_t gThrottle = 0;
 uint8_t gGear = GEAR_NONE;
 uint8_t gOldGear = GEAR_NONE;
 
-
 uint8_t gThrottleDirection = DIRECTION_STOP;
 uint8_t gDirection = DIRECTION_STOP;
 uint8_t gOldDirection = DIRECTION_STOP;
 
 #define IDLE_MAX 40
    
-   
-   
-
 //***Odometry
 #define TRACK 9.5
 #define WHEEL_DIA 2.5

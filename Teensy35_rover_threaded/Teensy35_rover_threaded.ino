@@ -176,13 +176,6 @@ Servo headservo;
 #include "Constants.h"
 #include "IOpins.h"
 
-//Globals
-float roll, pitch;
-float fXg = 0;
-float fYg = 0;
-float fZg = 0;
-float gyroz, accelx, accely;
-
 // Set elapsed time constants
 elapsedMillis motorFwd;
 elapsedMillis motorFwdRunTime;
@@ -206,11 +199,10 @@ unsigned long sensorRunTime;
 #define SONAR_NUM     4 // Number or sensors.
 #define MAX_DISTANCE 200 // Maximum distance (in cm) to ping.
 #define PING_INTERVAL 45 // Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
-
-unsigned int cm[SONAR_NUM];         // Where the ping distances are stored.
+ 
+volatile unsigned int cm[SONAR_NUM];         // Where the ping distances are stored.
 uint8_t currentSensor = 0;          // Keeps track of which sensor is active.
-unsigned long pingTimer[SONAR_NUM]; // Holds the times when the next ping should happen for each sensor.
-
+volatile unsigned long pingTimer[SONAR_NUM]; // Holds the times when the next ping should happen for each sensor.
 
 NewPing sonar[SONAR_NUM] = {
   NewPing(27, 26, MAX_DISTANCE), //lower left sensor
@@ -222,10 +214,10 @@ NewPing sonar[SONAR_NUM] = {
 NewPing sonarhd(34, 33, MAX_DISTANCE);  // Each sensor's trigger pin, echo pin, and max distance to ping.
 
 uint8_t obs_array[5];
-int cm_head[5];
+volatile int cm_head[5];
 
-int frtIRdistance, rearIRdistance;
-int leftCounter, rightCounter;
+volatile int frtIRdistance, rearIRdistance;
+volatile int leftCounter, rightCounter;
 
 int lls, lcs, lrs, hds, irF, irR;
 
@@ -254,9 +246,13 @@ float new_heading,
 
 int odo_start = 0;
 
-
 // global for heading from compass
-float yar_heading;
+volatile float yar_heading;
+volatile float roll, pitch;
+volatile float gyroz, accelx, accely;
+float fXg = 0;
+float fYg = 0;
+float fZg = 0;
 
 // Compass navigation
 float targetHeading,              // where we want to go to reach current waypoint
@@ -309,11 +305,9 @@ boolean clockwise;
 int id1, id2, id3;
 
 void setup() {
-Serial.print( "millis 0 here ==" );
-Serial.println( millis() );
     telem.begin(57600);
-Serial.print( "millis here ==" );
-Serial.println( millis() );
+    while ( !telem && millis() < 2000 ) {};
+
     Wire.begin();
     Wire.setClock(400000L);
 
@@ -372,7 +366,6 @@ Serial.println( millis() );
     if (threads.getState(id1) == Threads::RUNNING) telem.println("Sonar thread started");
     if (threads.getState(id2) == Threads::RUNNING) telem.println("IR thread started");
     if (threads.getState(id3) == Threads::RUNNING) telem.println("BNO055 thread started");
-
 
     telem << "Ready to receive telem Commands![f, b, r, l, s, t]" << endl; // Tell us I"m ready
     //telem.println("My Commands are: ");
