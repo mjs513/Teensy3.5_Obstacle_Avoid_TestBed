@@ -1,5 +1,5 @@
 
-void sonar_thread(){
+void readSonar(){
   while(1){
     for (uint8_t i = 0; i < SONAR_NUM; i++) { // Loop through all the sensors.
       if (millis() >= pingTimer[i]) {         // Is it this sensor's time to ping?
@@ -19,7 +19,7 @@ void sonar_thread(){
 }
 
 
-void sharp_dist_thread(){
+void readIR(){
   while(1){  
   int sum = 0;
   for (int i=0; i<3; i++) {
@@ -46,7 +46,7 @@ void sharp_dist_thread(){
 }
 
 
-void bno055_thread(){
+void readIMU(){
   while(1){
     sensors_event_t sensor;
     bno.getEvent(&sensor);
@@ -81,6 +81,29 @@ void bno055_thread(){
     threads.delay(BNO055_SAMPLERATE_DELAY_MS);
 
   }
+}
+
+void readGPS(){
+ while(1){
+  while (gps.available( gpsPort )) {
+    gps_fix fix = gps.read();
+
+    satno = fix.satellites;
+    hdop = fix.hdop;
+    pdop = fix.pdop;
+    lat = fix.latitude();
+    longit = fix.longitude();
+    gpsHeading = fix.heading();
+    gpsSpeed = fix.speed_kph();
+    laterr = fix.lat_err();
+    longerr = fix.lon_err();
+    alt = fix.altitude();
+    //cout << fix.satellites << ", " << fix.hdop << ", " << fix.pdop << ", ";
+    //cout << _FLOAT(fix.latitude(),8)                << ", " << _FLOAT(fix.longitude(),8) << ", "  << fix.heading() << ", ";
+    //cout << fix.speed_kph() << ", " << fix.altitude() << ", " << fix.lat_err() << ", ";
+    //cout << fix.lon_err() << endl;
+  } 
+ }
 }
 
 

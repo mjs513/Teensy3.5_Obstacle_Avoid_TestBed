@@ -10,7 +10,7 @@ void send_odometry(){
            
       // IMU
       //compass_update();
-      telem << -roll << "," << -pitch << "," << yar_heading << ",";
+      telem << (float) -roll << "," << (float) -pitch << "," << (float) yar_heading << ",";
 
       //Wheel Encoders
       getTicks_noreset();
@@ -120,7 +120,7 @@ void odometry(){
         new_heading = new_heading - 360.;
       }
 
-      telem << turn_time_mult << "," << yar_heading << endl;
+      telem << turn_time_mult << "," << (float) yar_heading << endl;
       
       pivotToOdo(new_heading, yar_heading);
            

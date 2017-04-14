@@ -134,6 +134,7 @@
 
 #include <EEPROM.h>
 #include <NewPing.h>
+#include <NMEAGPS.h>
 #include <Servo.h>         //servo library
 #include <Wire.h>
 #include <Streaming.h>
@@ -141,10 +142,14 @@
 #include <StopWatch.h>
 #include <elapsedMillis.h>
 #include "TeensyThreads.h"
+#include <atomic>
 
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+
+NMEAGPS  gps; // This parses the GPS characters
+#define gpsPort Serial6
 
 //Setup PS4 Controller
 #include <PS4BT.h>
@@ -214,10 +219,10 @@ NewPing sonar[SONAR_NUM] = {
 NewPing sonarhd(34, 33, MAX_DISTANCE);  // Each sensor's trigger pin, echo pin, and max distance to ping.
 
 uint8_t obs_array[5];
-volatile int cm_head[5];
+std::atomic<int> cm_head[5];
 
-volatile int frtIRdistance, rearIRdistance;
-volatile int leftCounter, rightCounter;
+std::atomic<int> frtIRdistance, rearIRdistance;
+std::atomic<int> leftCounter, rightCounter;
 
 int lls, lcs, lrs, hds, irF, irR;
 
@@ -235,6 +240,12 @@ volatile uint8_t rState = 0;
 volatile uint8_t lState = 0;
 uint8_t motor_on = 0;
 
+//GPS Values
+std::atomic<float> lat, longit, hdop, pdop, alt;
+std::atomic<float> gpsSpeed, laterr, longerr;
+std::atomic<float> gpsHeading;
+std::atomic<int> satno;
+
 //*** Odometry variables
 int odo_mode_toggle = 0;
 float new_heading,
@@ -247,9 +258,9 @@ float new_heading,
 int odo_start = 0;
 
 // global for heading from compass
-volatile float yar_heading;
-volatile float roll, pitch;
-volatile float gyroz, accelx, accely;
+std::atomic<float> yar_heading;
+std::atomic<float> roll, pitch;
+std::atomic<float> gyroz, accelx, accely;
 float fXg = 0;
 float fYg = 0;
 float fZg = 0;
@@ -302,7 +313,7 @@ int tDeadZoneRange, sDeadZoneRange;
 //int Speed;
 boolean clockwise;
 
-int id1, id2, id3;
+int Sonar, IR, IMU, GPS;
 
 void setup() {
     telem.begin(57600);
@@ -310,6 +321,7 @@ void setup() {
 
     Wire.begin();
     Wire.setClock(400000L);
+    gpsPort.begin(57600);
 
     delay(2000);
     
@@ -356,16 +368,19 @@ void setup() {
     for (uint8_t i = 1; i < SONAR_NUM; i++) // Set the starting time for each sensor.
       pingTimer[i] = pingTimer[i - 1] + PING_INTERVAL;
 
-    id1 = threads.addThread(sonar_thread);
-    id2 = threads.addThread(sharp_dist_thread);
-    id3 = threads.addThread(bno055_thread);
+    Sonar = threads.addThread(readSonar);
+    IR = threads.addThread(readIR);
+    IMU = threads.addThread(readIMU);
+    GPS = threads.addThread(readGPS);
     threads.setTimeSlice(0, 1);
-    threads.setTimeSlice(id1, 20);
-    threads.setTimeSlice(id2, 1);
-    threads.setTimeSlice(id3, 1);
-    if (threads.getState(id1) == Threads::RUNNING) telem.println("Sonar thread started");
-    if (threads.getState(id2) == Threads::RUNNING) telem.println("IR thread started");
-    if (threads.getState(id3) == Threads::RUNNING) telem.println("BNO055 thread started");
+    threads.setTimeSlice(Sonar, 20);
+    threads.setTimeSlice(IR, 1);
+    threads.setTimeSlice(IMU, 50);
+    threads.setTimeSlice(GPS, 50);
+    if (threads.getState(Sonar) == Threads::RUNNING) Serial.println("Sonar thread started");
+    if (threads.getState(IR) == Threads::RUNNING) Serial.println("IR thread started");
+    if (threads.getState(IMU) == Threads::RUNNING) Serial.println("BNO055 thread started");
+    if (threads.getState(GPS) == Threads::RUNNING) Serial.println("GPS thread started");
 
     telem << "Ready to receive telem Commands![f, b, r, l, s, t]" << endl; // Tell us I"m ready
     //telem.println("My Commands are: ");
@@ -443,7 +458,7 @@ void loop() {
       //telem.println("Turning Left!");
       set_speed(turnSpeed);
       //compass_update();
-      telem << "Change heading: " << turn_time_mult*100 << ", " << yar_heading << ", ";
+      telem << "Change heading: " << turn_time_mult*100 << ", " << (float) yar_heading << ", ";
        mLeft();
       //delay(400);  //was 2000
       delay(turn_time_mult * 100);
@@ -452,7 +467,7 @@ void loop() {
        }
       mStop();
       //compass_update();
-      telem << yar_heading << endl;
+      telem << (float) yar_heading << endl;
 
       motorTurnTime = 0;
       break;
@@ -466,7 +481,7 @@ void loop() {
       //compass_update();
       set_speed(turnSpeed);
       //compass_update();
-      telem << "Change heading: " << turn_time_mult*100 << ", " << yar_heading << ", ";
+      telem << "Change heading: " << turn_time_mult*100 << ", " << (float) yar_heading << ", ";
       mRight();
       //delay(400);
       delay(turn_time_mult * 100);
@@ -475,7 +490,7 @@ void loop() {
         }
       mStop();
       //compass_update();
-      telem << yar_heading << endl;
+      telem << (float) yar_heading << endl;
       motorTurnTime = 0;
       break;
       

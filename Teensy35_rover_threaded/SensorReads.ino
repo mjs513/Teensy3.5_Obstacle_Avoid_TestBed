@@ -110,7 +110,7 @@ void send_telemetry(){
     
       // IMU
       //compass_update();
-      telem << -roll << "," << -pitch << "," << yar_heading << ",";
+      telem << (float) -roll << "," << (float) -pitch << "," << (float) yar_heading << ",";
       //telem << wp_heading << ",";
 
       //Direction
@@ -123,12 +123,17 @@ void send_telemetry(){
 
       stasis();
       telem << " ---- " << motor_on <<  "," << stasis_err << ", " << stasis_flag;
-      telem << ", " << gyroz << ", " << accelx << ", " << accely << ", ";
+      telem << ", " << _FLOAT((float) gyroz,4) << ", " << _FLOAT((float) accelx, 4);
+      telem << ", " << _FLOAT((float) accely, 4) << ", ";
 
     for (uint8_t i = 0; i < SONAR_NUM; i++) {
-      telem <<  cm[i] << "cm, "; }
+      telem <<  (int) cm[i] << "cm, "; }
 
-      telem << frtIRdistance << ", " << rearIRdistance << ", ";
+      telem << (int) frtIRdistance << ", " << (int) rearIRdistance << ", ";
+
+      telem << (int) satno << ", " << (float) hdop/1000. << ", " << (float) pdop/1000 << ", ";
+      telem << _FLOAT((float) lat, 6) << ", " << _FLOAT((float) longit,6) << ", "  << (float) gpsHeading << ", ";
+      telem << (float) gpsSpeed << ", " << (float) alt;
 
       telem << endl;
       
